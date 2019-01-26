@@ -24,6 +24,9 @@ private:
 
     int colorValue = 255;
     int radius;
+    int offset;
+    int padding;
+    int squareSize;
 
     qreal saturation;
     qreal alpha = 255.0;
@@ -35,7 +38,7 @@ private:
 
 
 protected:
-
+    void paintEvent(QPaintEvent *)override;
 };
 
 
@@ -67,6 +70,10 @@ private:
     QPushButton *cancel;
 
     ColorCircle *circle;
+
+
+
+    void configureStylesheet();
 
 signals:
 

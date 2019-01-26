@@ -5,10 +5,13 @@
 #include <QVBoxLayout>
 #include <QtMath>
 #include <QDebug>
+#include <QPainter>
+#include <QGraphicsEffect>
 
 ColorView::ColorView(QWidget *parent) : QWidget(parent)
 {
     configureView();
+    configureStylesheet();
 }
 
 void ColorView::configureView()
@@ -57,7 +60,7 @@ void ColorView::configureView()
     confirm = new QPushButton("confirm", this);
     cancel = new QPushButton("cancel", this);
 
-    auto circle = new ColorCircle();
+    circle = new ColorCircle();
 
     layout->addWidget(hWidget, 0, 0);
     layout->addWidget(hFormat, 1, 0);
@@ -92,31 +95,37 @@ void ColorView::configureView()
 
 }
 
+void ColorView::configureStylesheet() {
+
+    setStyleSheet(
+            "background: rgba(25,25,25,1);;"
+            );
+}
+
 ColorCircle::ColorCircle(QWidget *parent) : QWidget(parent)
 {
-
-    setGeometry(0, 0, 250 , 250 );
-    radius = 250 / 2 ;
+    squareSize = 250;
+    radius = minimumSize().width() / 2 ;
     centerPoint.setX(radius );
     centerPoint.setY(radius );
     colorValue = 255;
+    offset = 5;
+    padding = offset*2;
+    auto redefinedSize = squareSize + padding;
+    setMinimumSize({redefinedSize,redefinedSize});
 
 
     drawImage();
-    configureLabels();
+  //  configureLabels();
 
-
-
-
- //   setStyleSheet("background: rgba(20,20,20,1);");
 }
 
 QImage *ColorCircle::drawImage()
 {
-    image = new QImage(width(), height(), QImage::Format_ARGB32_Premultiplied);
+    image = new QImage(squareSize, squareSize, QImage::Format_ARGB32_Premultiplied);
     //draw color circle image
-        for (int i = 0; i < width(); i++) {
-            for (int j = 0; j < width(); j++) {
+        for (int i = offset; i < squareSize; i++) {
+            for (int j = offset; j < squareSize; j++) {
 
                 QPoint point(i, j);
                 int d = qPow(point.rx() - centerPoint.rx(), 2) + qPow(point.ry() - centerPoint.ry(), 2);
@@ -145,6 +154,13 @@ void ColorCircle::configureLabels()
 
     auto label = new QLabel("hello");
     label->setPixmap(QPixmap::fromImage(*image));
+    label->setStyleSheet("background: rgba(0,0,0,0);");
+
+    auto effect = new QGraphicsDropShadowEffect();
+    effect->setBlurRadius(35);
+    effect->setColor(QColor(0,0,0));
+    effect->setOffset(0);
+    label->setGraphicsEffect(effect);
 
     auto colorLabel = new QLabel;
     colorLabel->setText(color.name());
@@ -154,6 +170,9 @@ void ColorCircle::configureLabels()
     holder->setLayout(holderLayout);
 
     pickButton = new QPushButton("PICK");
+
+
+
 
     auto f = label->font();
     f.setWeight(65);
@@ -165,5 +184,20 @@ void ColorCircle::configureLabels()
 
     layout->addWidget(label, 0, 0);
     layout->addWidget(holder, 0, 1, 1, 1, Qt::AlignHCenter | Qt::AlignVCenter);
+}
+
+void ColorCircle::paintEvent(QPaintEvent *event) {
+
+
+    QPainter painter(this);
+    painter.setRenderHints(QPainter::HighQualityAntialiasing);
+
+    painter.drawImage(offset,offset, *image);
+
+    painter.setPen(QPen(QColor(250,250,250),2));
+    painter.drawEllipse( offset, offset, image->width(), image->height());
+  //  QWidget::paintEvent( event);
+
+    qDebug() << "called";
 }
 
