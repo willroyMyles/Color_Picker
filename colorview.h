@@ -6,6 +6,7 @@
 #include <QPushButton>
 #include <QSlider>
 #include <QSpinBox>
+#include <QStackedWidget>
 #include <QWidget>
 
 
@@ -115,22 +116,27 @@ private:
     QSlider *gSlider;
     QSlider *bSlider;
     QSlider *aSlider;
-
+    
     QSpinBox *rBox;
     QSpinBox *gBox;
     QSpinBox *bBox;
     QSpinBox *aBox;
+
+    QSlider *hSlider;
+    QSlider *sSlider;
+    QSlider *vSlider;
+    
+    QSpinBox *hBox;
+    QSpinBox *sBox;
+    QSpinBox *vBox;
+    
+    QStackedWidget *stackWidget;
 
     QLineEdit *lineEditor;
     QComboBox *comboBox;
 
     QPushButton *confirm;
     QPushButton *cancel;
-    
-    QLabel* rLabel;
-    QLabel* gLabel;
-    QLabel* bLabel;
-    QLabel* aLabel;
 
     ColorDisplay *display;
     ColorCircle *circle;
@@ -138,10 +144,8 @@ private:
     
     QColor::Spec spec = QColor::Rgb;
     
-
     QString colorNameFromSpac(QColor col);
     
-    void configureBasedOnSpec();
     void configureView();
     void configureStylesheet();
     void configureConnections();
