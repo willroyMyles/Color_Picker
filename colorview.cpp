@@ -118,7 +118,7 @@ void ColorView::configureConnections()
     rBox->setRange(0, 255);
     bBox->setRange(0, 255);
     gBox->setRange(0, 255);
-    aBox->setRange(0, 100);
+    aBox->setRange(0, 255);
     rSlider->setRange(rBox->minimum(),rBox->maximum());
     gSlider->setRange(gBox->minimum(),gBox->maximum());
     bSlider->setRange(bBox->minimum(),bBox->maximum());
@@ -142,7 +142,11 @@ void ColorView::configureConnections()
     connect(rSlider, SIGNAL(valueChanged(int)),inputCircle, SLOT(setRed(int)));
     connect(gSlider, SIGNAL(valueChanged(int)),inputCircle, SLOT(setGreen(int)));
     connect(bSlider, SIGNAL(valueChanged(int)),inputCircle, SLOT(setBlue(int)));
-    connect(aSlider, SIGNAL(valueChanged(int)),inputCircle, SLOT(setAlpha(int)));
+    //connect(aSlider, SIGNAL(valueChanged(int)),circle, SLOT(setAlpha(int)));
+    connect(aSlider, &QSlider::valueChanged, [=](int val){
+        circle->setAlpha(val);
+        inputCircle->setAlpha(val);
+    });
     
     
     connect(rBox, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),[=](int value){
@@ -282,7 +286,10 @@ ColorCircle::ColorCircle(QWidget *parent) : QWidget(parent)
 
 QImage *ColorCircle::drawImage()
 {
-    image = new QImage(250, 250, QImage::Format_ARGB32_Premultiplied);
+
+
+    if(!image)  image = new QImage(250, 250, QImage::Format_ARGB32_Premultiplied);
+
     //draw color circle image
         for (int i = 0; i < image->width(); i++) {
             for (int j = 0; j < image->height(); j++) {
@@ -323,7 +330,11 @@ void ColorCircle::paintEvent(QPaintEvent *event) {
     qDebug() << "called";
 }
 
-
+void ColorCircle::setAlpha(int alpha) {
+    this->alpha = alpha;
+    drawImage();
+    repaint();
+}
 
 
 
@@ -374,7 +385,7 @@ QColor InputCircle::getCurrentColorFromPosition() {
     if (colorValue >= 253)    colorValue = 255;
     if (colorValue <= 2)    colorValue = 0;
     
-    color.setHsv(theta, saturation, colorValue, 255);
+    color.setHsv(theta, saturation, colorValue, this->alpha);
     return color;
 }
 
@@ -420,6 +431,8 @@ void InputCircle::setBlue(int blue) {
 
 void InputCircle::setAlpha(int alpha) {
     this->alpha = alpha;
+    color.setAlpha(alpha);
+    drawIndicatorCircle(color);
 }
 
 void InputCircle::mouseReleaseEvent(QMouseEvent *) {

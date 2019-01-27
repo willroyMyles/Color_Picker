@@ -1,5 +1,6 @@
 
 #include <QComboBox>
+#include <QGraphicsEffect>
 #include <QLineEdit>
 #include <QLabel>
 #include <QPushButton>
@@ -84,6 +85,9 @@ public:
     int offset;
     int padding;
     int squareSize;
+    
+public slots:
+    void setAlpha(int alpha);
 private:
     QImage *image;
 
