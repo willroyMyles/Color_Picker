@@ -25,32 +25,49 @@ void ColorView::configureView()
     auto hlayoutWidget = new QGridLayout;
     auto hlayoutFormat = new QGridLayout;
     auto hlayoutSliders = new QGridLayout;
+    auto hsvlayoutSliders = new QGridLayout;
+    auto aLayout = new QGridLayout;
     auto hlayoutButton = new QGridLayout;
 
     auto hWidget = new  QWidget;
     auto hFormat = new  QWidget;
     auto hSliders = new QWidget;
+    auto hsvSliders = new QWidget;
     auto hButton = new  QWidget;
+    auto aWidget = new  QWidget;
 
     hWidget->setLayout(hlayoutWidget);
     hFormat->setLayout(hlayoutFormat);
     hSliders->setLayout(hlayoutSliders);
+    hsvSliders->setLayout(hsvlayoutSliders);
     hButton->setLayout(hlayoutButton);
+    aWidget->setLayout(aLayout);
 
+    stackWidget = new QStackedWidget(this);
+    
     rSlider = new QSlider(Qt::Horizontal, this);
     gSlider = new QSlider(Qt::Horizontal, this);
     bSlider = new QSlider(Qt::Horizontal, this);
+    hSlider = new QSlider(Qt::Horizontal, this);
+    sSlider = new QSlider(Qt::Horizontal, this);
+    vSlider = new QSlider(Qt::Horizontal, this);
     aSlider = new QSlider(Qt::Horizontal, this);
 
     rBox = new QSpinBox(this);
     gBox = new QSpinBox(this);
     bBox = new QSpinBox(this);
+    hBox = new QSpinBox(this);
+    sBox = new QSpinBox(this);
+    vBox = new QSpinBox(this);
     aBox = new QSpinBox(this);
 
-    rLabel = new QLabel("R");
-    gLabel = new QLabel("G");
-    bLabel = new QLabel("B");
-    aLabel = new QLabel("A");
+    auto rLabel = new QLabel("R");
+    auto gLabel = new QLabel("G");
+    auto bLabel = new QLabel("B");
+    auto hLabel = new QLabel("H");
+    auto sLabel = new QLabel("S");
+    auto vLabel = new QLabel("V");
+    auto aLabel = new QLabel("A");
     auto format = new QLabel("Format");
 
     lineEditor = new QLineEdit(this);
@@ -71,9 +88,15 @@ void ColorView::configureView()
 
     layout->addWidget(hWidget, 0, 0);
     layout->addWidget(hFormat, 1, 0);
-    layout->addWidget(hSliders, 2,0);
-    layout->addWidget(hButton, 3, 0);
+    layout->addWidget(stackWidget, 2,0);
+    layout->addWidget(aWidget, 3, 0);
+    layout->addWidget(hButton, 4, 0);
 
+    
+    aLayout->addWidget(aLabel,3,0, 1, 1);
+    aLayout->addWidget(aSlider,3,1, 1, 1);
+    aLayout->addWidget(aBox,3,2, 1, 1);
+    
     hlayoutWidget->addWidget(circle, 0, 0);
     hlayoutWidget->addWidget(display, 1, 0);
 
@@ -84,17 +107,30 @@ void ColorView::configureView()
     hlayoutSliders->addWidget(rLabel, 0, 0);
     hlayoutSliders->addWidget(gLabel, 1, 0);
     hlayoutSliders->addWidget(bLabel, 2, 0);
-    hlayoutSliders->addWidget(aLabel, 3, 0);
+//    hlayoutSliders->addWidget(aLabel, 3, 0);
+    hsvlayoutSliders->addWidget(hLabel,0,0);
+    hsvlayoutSliders->addWidget(sLabel,1,0);
+    hsvlayoutSliders->addWidget(vLabel,2,0);
 
     hlayoutSliders->addWidget(rSlider, 0, 1);
     hlayoutSliders->addWidget(gSlider, 1, 1);
     hlayoutSliders->addWidget(bSlider, 2, 1);
-    hlayoutSliders->addWidget(aSlider, 3, 1);
+//    hlayoutSliders->addWidget(aSlider, 3, 1);
+    hsvlayoutSliders->addWidget(hSlider,0,1);
+    hsvlayoutSliders->addWidget(sSlider,1,1);
+    hsvlayoutSliders->addWidget(vSlider,2,1);
 
     hlayoutSliders->addWidget(rBox, 0, 2);
     hlayoutSliders->addWidget(gBox, 1, 2);
     hlayoutSliders->addWidget(bBox, 2, 2);
-    hlayoutSliders->addWidget(aBox, 3, 2);
+//    hlayoutSliders->addWidget(aBox, 3, 2);
+    hsvlayoutSliders->addWidget(hBox,0,2);
+    hsvlayoutSliders->addWidget(sBox,1,2);
+    hsvlayoutSliders->addWidget(vBox,2,2);
+    
+    stackWidget->addWidget(hSliders);
+    stackWidget->addWidget(hsvSliders);
+
 
     hlayoutButton->addWidget(confirm, 0, 0);
     hlayoutButton->addWidget(cancel, 0, 1 );
@@ -112,10 +148,7 @@ void ColorView::configureStylesheet() {
 
 void ColorView::configureConnections()
 {
-    
-    rLabel->setText("R");
-    gLabel->setText("G");
-    bLabel->setText("B");
+
     rBox->setRange(0, 255);
     bBox->setRange(0, 255);
     gBox->setRange(0, 255);
@@ -177,11 +210,19 @@ void ColorView::configureConnections()
     });
     
     connect(comboBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [=](int index){
-        if(index == 0) spec = QColor::Rgb;
-        if(index == 1) spec = QColor::Hsv;
-        if(index == 2) spec = QColor::Cmyk; // subs for hex
+        if(index == 0) {
+            spec = QColor::Rgb;
+            stackWidget->setCurrentIndex(index);
+        }
+        if(index == 1){
+             spec = QColor::Hsv;
+            stackWidget->setCurrentIndex(index);
+        }
+        if(index == 2){
+             spec = QColor::Cmyk; // subs for hex
+            stackWidget->setCurrentIndex(0); // default to rgb
+        }
         this->lineEditor->setText(colorNameFromSpac(inputCircle->color));
-        configureBasedOnSpec();
     });
     
     
@@ -234,28 +275,6 @@ QString ColorView::colorNameFromSpac(QColor col) {
             break;
     }
     return name;
-}
-
-void ColorView::configureBasedOnSpec() {
-   
-    
-    
-    
-    switch (spec)
-    {
-        case QColor::Rgb:
-        {
-            
-          
-        }
-             break;
-        case QColor::Hsv:
-            break;
-        case QColor::Cmyk:
-            break;
-        default:
-            break;
-    }
 }
 
 void ColorView::sliderUpdatesSpinboxWithoutSignal(QSpinBox *box, int value) {
