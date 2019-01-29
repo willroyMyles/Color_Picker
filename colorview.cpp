@@ -13,6 +13,7 @@ ColorView::ColorView(QWidget *parent) : QWidget(parent)
 {
     configureView();
     configureConnections();
+    inputCircle->setInitialColor(QColor(255,255,255));
   //  configureStylesheet();
 }
 
@@ -123,6 +124,7 @@ void ColorView::configureConnections()
     gSlider->setRange(gBox->minimum(),gBox->maximum());
     bSlider->setRange(bBox->minimum(),bBox->maximum());
     aSlider->setRange(aBox->minimum(),aBox->maximum());
+    aSlider->setValue(255);
     
     
     
@@ -144,7 +146,6 @@ void ColorView::configureConnections()
     connect(bSlider, SIGNAL(valueChanged(int)),inputCircle, SLOT(setBlue(int)));
     //connect(aSlider, SIGNAL(valueChanged(int)),circle, SLOT(setAlpha(int)));
     connect(aSlider, &QSlider::valueChanged, [=](int val){
-        circle->setAlpha(val);
         inputCircle->setAlpha(val);
     });
     
@@ -344,9 +345,10 @@ InputCircle::InputCircle(ColorCircle *parent) : QWidget(parent) {
     radius = parent->radius;
     centerPoint = parent->centerPoint;
     offset = parent->offset;
-    padding = parent->padding;
+  //  padding = parent->padding;
     color = parent->color;
-    
+    if(parent) this->parent = parent;
+
     setMinimumSize({squareSize,squareSize});
 }
 
@@ -380,10 +382,10 @@ QColor InputCircle::getCurrentColorFromPosition() {
     auto saturation = (qSqrt(d) / radius)*255.0f;
     qreal theta = qAtan2(pos.ry() - centerPoint.ry(), pos.rx() - centerPoint.rx());
     theta = (180 + 90 + (int)qRadiansToDegrees(theta)) % 360;
-    if (saturation >= 253)    saturation = 255;
-    if (saturation <= 2)    saturation = 0;
-    if (colorValue >= 253)    colorValue = 255;
-    if (colorValue <= 2)    colorValue = 0;
+//    if (saturation >= 253)    saturation = 255;
+//    if (saturation <= 2)    saturation = 0;
+//    if (colorValue >= 253)    colorValue = 255;
+//    if (colorValue <= 2)    colorValue = 0;
     
     color.setHsv(theta, saturation, colorValue, this->alpha);
     return color;
@@ -409,7 +411,6 @@ void InputCircle::drawIndicatorCircle(QColor color) {
     this->colorValue = color.value();
     emit colorChanged(color);
     emit updateColorText(color);
-//    emit positionChanged(color);
     qDebug() << color;
     repaint();
 }
@@ -432,6 +433,7 @@ void InputCircle::setBlue(int blue) {
 void InputCircle::setAlpha(int alpha) {
     this->alpha = alpha;
     color.setAlpha(alpha);
+    parent->setAlpha(alpha);
     drawIndicatorCircle(color);
 }
 
@@ -454,6 +456,13 @@ void InputCircle::setValue(int value) {
     color.setHsv(color.hue(), color.saturation(), value);
     drawIndicatorCircle(color);
 }
+
+void InputCircle::setInitialColor(QColor col) {
+    this->color = col;
+    drawIndicatorCircle(col);
+    emit positionChanged(col);
+}
+
 
 
 

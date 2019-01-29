@@ -29,19 +29,22 @@ public:
     InputCircle(ColorCircle *parent = Q_NULLPTR);
     int offset;
     QColor color;
+    
+    void setInitialColor(QColor col);
 
 private:
     bool drawSmallDot = false;
     
     int squareSize;
     int radius;
-    int padding;
-    int alpha;
+//    int padding;
+    int alpha = 255;
+    
+    ColorCircle *parent;
     
     QPoint centerPoint;
     QPoint pos;
     
-    QColor currentColor;
     QColor initialColor;
     int colorValue = 255;
     
@@ -90,10 +93,8 @@ public slots:
     void setAlpha(int alpha);
 private:
     QImage *image;
-
     qreal saturation;
     qreal alpha = 255.0;
-
     QImage* drawImage();
 
 
