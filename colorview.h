@@ -1,4 +1,7 @@
 
+#include <QApplication>
+#include <QDesktopWidget>
+#include <QDialog>
 #include <QComboBox>
 #include <QGraphicsEffect>
 #include <QLineEdit>
@@ -10,6 +13,20 @@
 #include <QWidget>
 
 
+class ColorOverlay : public QWidget
+{
+    Q_OBJECT
+public:
+    ColorOverlay(QRect screenGeometry, QWidget* parent = Q_NULLPTR);
+signals:
+    void color(QColor col);
+    void closeWindow();
+protected:
+    void mouseMoveEvent(QMouseEvent *) override;
+    void mousePressEvent(QMouseEvent *) override;
+    void mouseReleaseEvent(QMouseEvent *) override;
+    
+};
 
 class ColorCircle;
 class ColorDisplay : public QWidget
@@ -18,9 +35,10 @@ class ColorDisplay : public QWidget
 public:
     ColorDisplay(QWidget *parent = Q_NULLPTR);
     QColor color;
-    
 protected:
     void paintEvent(QPaintEvent *) override;
+signals:
+    void pick();
 };
 
 class InputCircle : public QWidget
@@ -52,6 +70,7 @@ private:
     void setCirclePosition(QMouseEvent *);
     QColor getCurrentColorFromPosition();
     void drawIndicatorCircle(QColor color);
+    void checkColorValue();
     
 public slots:
     void setRed(int red);
@@ -89,14 +108,14 @@ public:
     int offset;
     int padding;
     int squareSize;
-    
+    QImage* drawImage();
+
 public slots:
     void setAlpha(int alpha);
 private:
     QImage *image;
     qreal saturation;
     qreal alpha = 255.0;
-    QImage* drawImage();
 
 
 protected:
@@ -113,6 +132,8 @@ public:
 
 
 private:
+    const qreal factor = 2.55;
+    
     QSlider *rSlider;
     QSlider *gSlider;
     QSlider *bSlider;
@@ -152,6 +173,8 @@ private:
     void sliderUpdatesSpinboxWithoutSignal(QSpinBox *, int value);
     void spinboxUpdatesSliderWithoutSignal(QSlider *, int value);
     void colorCircleUpdatesSliderWithoutNotification(QSlider *, QSpinBox *, QColor &);
+    
+    void createOverlay();
 
 signals:
 

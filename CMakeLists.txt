@@ -25,8 +25,10 @@ set(HEADERS
     mainwindow.h
 )
 
+set(QRC icons.qrc)
+
 set(LIBS Qt5::Concurrent Qt5::Widgets)
-add_executable(${CMAKE_PROJECT_NAME} ${SRC} ${HEADERS})
+add_executable(${CMAKE_PROJECT_NAME} ${SRC} ${HEADERS} ${QRC})
 target_link_libraries(${CMAKE_PROJECT_NAME} ${LIBS})
 
 
