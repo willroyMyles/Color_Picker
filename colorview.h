@@ -7,25 +7,37 @@
 #include <QLineEdit>
 #include <QLabel>
 #include <QPushButton>
+#include <QScreen>
 #include <QSlider>
 #include <QSpinBox>
 #include <QStackedWidget>
 #include <QWidget>
+#include <qwindowdefs_win.h>
 
 
-class ColorOverlay : public QWidget
+class Overlay : public QWidget
 {
     Q_OBJECT
 public:
-    ColorOverlay(QRect screenGeometry, QWidget* parent = Q_NULLPTR);
+    //accepts screen rect and widget as parent
+    Overlay(QRect sg, QWidget* parent = Q_NULLPTR);
+    void drawImage();
+private:
+    QRect firstQuadrant;
+    QRect secondQuadrant;
+    QRect thirdQuadrant;
+    QRect fourthQuadrant;
+    
+    QPixmap pixmap;
 signals:
     void color(QColor col);
     void closeWindow();
 protected:
+    void paintEvent(QPaintEvent *) override;
     void mouseMoveEvent(QMouseEvent *) override;
     void mousePressEvent(QMouseEvent *) override;
     void mouseReleaseEvent(QMouseEvent *) override;
-    
+    bool eventFilter(QObject*, QEvent*) override;
 };
 
 class ColorCircle;
@@ -112,6 +124,7 @@ public:
 
 public slots:
     void setAlpha(int alpha);
+    void setColor(QColor col);
 private:
     QImage *image;
     qreal saturation;
@@ -154,7 +167,7 @@ private:
 
     QLineEdit *lineEditor;
     QComboBox *comboBox;
-
+    QList<Overlay*> *list;
     QPushButton *confirm;
     QPushButton *cancel;
 
