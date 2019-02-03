@@ -625,18 +625,17 @@ void ColorDisplay::paintEvent(QPaintEvent *) {
 
 
 Overlay::Overlay(QRect sg, QWidget *parent): QWidget(parent) {
-    setWindowFlags(Qt::FramelessWindowHint |Qt::WindowStaysOnTopHint | Qt::X11BypassWindowManagerHint);
+    setWindowFlags( windowFlags() | Qt::WindowStaysOnTopHint | Qt::X11BypassWindowManagerHint);
 
     setMouseTracking(true);
     setAttribute(Qt::WA_QuitOnClose, false);
-    setStyleSheet("background: rgba(0,0,0,0);");
+    setAttribute(Qt::WA_TranslucentBackground);
 
-    firstQuadrant = QRect(sg.x(), sg.y(), sg.width()/2, sg.height()/2);
-    secondQuadrant = QRect(sg.width()/2,sg.y(),sg.width()/2, sg.height()/2);
-    thirdQuadrant = QRect(sg.x(), sg.height()/2,sg.width()/2, sg.height()/2);
-    fourthQuadrant = QRect(sg.width()/2, sg.height()/2, sg.width()/2, sg.height()/2);
+    setStyleSheet("background: rgba(0,0,0,0.9);");
+
+    qreal overlayOpacity = 0.004f;
+    setWindowOpacity(overlayOpacity);
     
-    this->grabMouse();
     move(sg.x(), sg.y());
     resize(sg.width(), sg.height());
     installEventFilter(this);
@@ -644,26 +643,17 @@ Overlay::Overlay(QRect sg, QWidget *parent): QWidget(parent) {
 }
 
 void Overlay::mousePressEvent(QMouseEvent *event) {
-    repaint();
     QWidget::mousePressEvent(event);
     emit closeWindow();
 }
 
 void Overlay::mouseMoveEvent(QMouseEvent *eve) {
     
-//    int mouseScreen = qApp->desktop()->screenNumber(QCursor::pos());
-//    auto point = QCursor::pos() - QPoint(10,10);
-//    auto p = QGuiApplication::screens().at(mouseScreen)->grabWindow(winId(),point.x(), point.y(),20,20);
-//    auto col = p.toImage().pixelColor(10,10);
-//
-//
-//
-//    pixmap = p;
-    
-    drawImage();
-    repaint();
-    auto col = pixmap.toImage().pixelColor(QCursor::pos());
-    
+    int mouseScreen = qApp->desktop()->screenNumber(QCursor::pos());
+    auto point = QCursor::pos() - QPoint(10,10);
+    auto p = QGuiApplication::screens().at(mouseScreen)->grabWindow(winId(),point.x(), point.y(),20,20);
+    auto col = p.toImage().pixelColor(10,10);
+
     emit color(col);
     QWidget::mouseMoveEvent(eve);
 }
@@ -674,27 +664,11 @@ void Overlay::mouseReleaseEvent(QMouseEvent *) {
 
 bool Overlay::eventFilter(QObject *watched, QEvent *event)
 {
-    if( event->type() == QEvent::MouseButtonPress) qDebug() << "mouse btn pressed";
-    if( event->type() == QEvent::MouseMove) qDebug() << "mouse btn moved";
-    if( event->type() == QEvent::GraphicsSceneMouseMove) qDebug() << "graph move";
-
-    
     return QWidget::eventFilter(watched, event);
 }
 
 void Overlay::paintEvent(QPaintEvent *e) {
-    QPainter painter(this);
-    QColor backgroundColor =Qt::TransparentMode;
-    painter.drawPixmap(pixmap.rect(), pixmap);
-   // QWidget::paintEvent(e);
-}
 
-void Overlay::drawImage() {
-    int mouseScreen = qApp->desktop()->screenNumber(QCursor::pos());
-    auto screen = QGuiApplication::screens().at(mouseScreen);
-    auto p = screen->grabWindow(winId(),0,0,width(),height());
-    p = p.scaled({geometry().width(),geometry().height()});
-    pixmap = p;
 }
 
 

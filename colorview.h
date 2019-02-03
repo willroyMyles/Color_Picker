@@ -21,14 +21,7 @@ class Overlay : public QWidget
 public:
     //accepts screen rect and widget as parent
     Overlay(QRect sg, QWidget* parent = Q_NULLPTR);
-    void drawImage();
 private:
-    QRect firstQuadrant;
-    QRect secondQuadrant;
-    QRect thirdQuadrant;
-    QRect fourthQuadrant;
-    
-    QPixmap pixmap;
 signals:
     void color(QColor col);
     void closeWindow();
