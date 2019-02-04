@@ -19,6 +19,9 @@ ColorView::ColorView(QWidget *parent) : QWidget(parent)
 
 void ColorView::configureView()
 {
+    setAttribute(Qt::WA_MacShowFocusRect, false);
+    setStyleSheet(SS::QWidgetDark());
+    
     auto layout = new QVBoxLayout;
     setLayout(layout);
 
@@ -52,6 +55,14 @@ void ColorView::configureView()
     sSlider = new QSlider(Qt::Horizontal, this);
     vSlider = new QSlider(Qt::Horizontal, this);
     aSlider = new QSlider(Qt::Horizontal, this);
+    
+    rSlider->setStyleSheet(SS::QSlider());
+    gSlider->setStyleSheet(SS::QSlider());
+    bSlider->setStyleSheet(SS::QSlider());
+    hSlider->setStyleSheet(SS::QSlider());
+    sSlider->setStyleSheet(SS::QSlider());
+    vSlider->setStyleSheet(SS::QSlider());
+    aSlider->setStyleSheet(SS::QSlider());
 
     rBox = new QSpinBox(this);
     gBox = new QSpinBox(this);
@@ -60,6 +71,14 @@ void ColorView::configureView()
     sBox = new QSpinBox(this);
     vBox = new QSpinBox(this);
     aBox = new QSpinBox(this);
+    
+    rBox->setStyleSheet(SS::QSpinBox());
+    gBox->setStyleSheet(SS::QSpinBox());
+    bBox->setStyleSheet(SS::QSpinBox());
+    hBox->setStyleSheet(SS::QSpinBox());
+    sBox->setStyleSheet(SS::QSpinBox());
+    vBox->setStyleSheet(SS::QSpinBox());
+    aBox->setStyleSheet(SS::QSpinBox());
 
     auto rLabel = new QLabel("R");
     auto gLabel = new QLabel("G");
@@ -69,6 +88,15 @@ void ColorView::configureView()
     auto vLabel = new QLabel("V");
     auto aLabel = new QLabel("A");
     auto format = new QLabel("Format");
+    
+    rLabel->setStyleSheet(SS::QLabelWhite());
+    gLabel->setStyleSheet(SS::QLabelWhite());
+    bLabel->setStyleSheet(SS::QLabelWhite());
+    hLabel->setStyleSheet(SS::QLabelWhite());
+    sLabel->setStyleSheet(SS::QLabelWhite());
+    vLabel->setStyleSheet(SS::QLabelWhite());
+    aLabel->setStyleSheet(SS::QLabelWhite());
+    format->setStyleSheet(SS::QLabelWhite());
 
     lineEditor = new QLineEdit(this);
     comboBox = new QComboBox(this);
@@ -76,10 +104,15 @@ void ColorView::configureView()
     QStringList stringList;
     stringList << "RGB" << "HSV" << "HEX" ;
     comboBox->addItems(stringList);
+    
+    lineEditor->setStyleSheet(SS::QLineEdit());
+    comboBox->setStyleSheet(SS::QComboBox());
 
     confirm = new QPushButton("confirm", this);
     cancel = new QPushButton("cancel", this);
-    
+    confirm->setStyleSheet(SS::QPushButtonGreyscale());
+    cancel->setStyleSheet(SS::QPushButtonGreyscale());
+
     display = new ColorDisplay;
     circle = new ColorCircle();
     inputCircle = new InputCircle(circle);
@@ -607,14 +640,17 @@ ColorDisplay::ColorDisplay(QWidget *parent) : QWidget(parent) {
     auto button = new QPushButton(this);
     button->setIcon(QIcon((":/images/dropper.png")));
     button->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+    button->setIconSize({25,25});
     
     layout->addStretch();
     layout->addWidget(button);
-    layout->setContentsMargins(0, 0, 0, 0);
+    //layout->setContentsMargins(0, 0, 0, 0);
     
     connect(button, &QPushButton::clicked,[=](){
         emit pick();
     });
+    
+    button->setStyleSheet(SS::QPushButtonInvisible());
 }
 
 void ColorDisplay::paintEvent(QPaintEvent *) {
@@ -630,8 +666,6 @@ Overlay::Overlay(QRect sg, QWidget *parent): QWidget(parent) {
     setMouseTracking(true);
     setAttribute(Qt::WA_QuitOnClose, false);
     setAttribute(Qt::WA_TranslucentBackground);
-
-    setStyleSheet("background: rgba(0,0,0,0.9);");
 
     qreal overlayOpacity = 0.004f;
     setWindowOpacity(overlayOpacity);

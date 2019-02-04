@@ -16,12 +16,14 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(SRC
     colorview.cpp
+    ss.cpp
     main.cpp
     mainwindow.cpp
 )
 
 set(HEADERS
     colorview.h
+    ss.h
     mainwindow.h
 )
 

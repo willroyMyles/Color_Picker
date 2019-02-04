@@ -13,7 +13,7 @@
 #include <QStackedWidget>
 #include <QWidget>
 #include <qwindowdefs_win.h>
-
+#include "ss.h"
 
 class Overlay : public QWidget
 {
