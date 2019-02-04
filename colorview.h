@@ -134,7 +134,7 @@ class ColorView : public QWidget
 {
     Q_OBJECT
 public:
-    explicit ColorView(QWidget *parent = nullptr);
+    ColorView(QWidget *parent = nullptr);
 
 
 private:

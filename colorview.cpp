@@ -14,7 +14,6 @@ ColorView::ColorView(QWidget *parent) : QWidget(parent)
     configureView();
     configureConnections();
     inputCircle->setInitialColor(QColor(255,255,255));
-  //  configureStylesheet();
 }
 
 void ColorView::configureView()
@@ -22,8 +21,27 @@ void ColorView::configureView()
     setAttribute(Qt::WA_MacShowFocusRect, false);
     setStyleSheet(SS::QWidgetDark());
     
+	setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint | Qt::FramelessWindowHint );
+	setAttribute(Qt::WA_TranslucentBackground);
+
+	//holder will be the invisible widget that houses everything
+	auto holder = new QWidget;
+	auto holderLayout = new QVBoxLayout;
+
+	auto effect = new QGraphicsDropShadowEffect;
+	effect->setOffset(0);
+	effect->setBlurRadius(15);
+	effect->setColor(QColor(0,0,0));
+	holder->setGraphicsEffect(effect);
+
+
+	holderLayout->addWidget(holder);
+	setLayout(holderLayout);
+	holderLayout->setContentsMargins(20, 20, 20, 20);
+
     auto layout = new QVBoxLayout;
-    setLayout(layout);
+    holder->setLayout(layout);
+
 
     auto hlayoutWidget = new QGridLayout;
     auto hlayoutFormat = new QGridLayout;
@@ -667,7 +685,7 @@ Overlay::Overlay(QRect sg, QWidget *parent): QWidget(parent) {
     setAttribute(Qt::WA_QuitOnClose, false);
     setAttribute(Qt::WA_TranslucentBackground);
 
-    qreal overlayOpacity = 0.004f;
+    qreal overlayOpacity = 0.1f;
     setWindowOpacity(overlayOpacity);
     
     move(sg.x(), sg.y());
