@@ -314,7 +314,12 @@ void ColorView::configureConnections()
         this->lineEditor->setText(colorNameFromSpac(inputCircle->color));
     });
     
-    
+    connect(confirm, &QPushButton::clicked, [=](){
+        hide();
+    });
+    connect(cancel, &QPushButton::clicked, [=](){
+        hide();
+    });
 }
 
 void ColorView::spinboxUpdatesSliderWithoutSignal(QSlider *slider, int value) {
@@ -384,6 +389,7 @@ void ColorView::sliderUpdatesSpinboxWithoutSignal(QSpinBox *box, int value) {
 void ColorView::createOverlay() {
     
     //hide();
+    picking = true;
     int num = QApplication::desktop()->screenCount();
     list = new QList<Overlay*>;
     auto delList = [&](QList<Overlay*> *list){
@@ -403,14 +409,19 @@ void ColorView::createOverlay() {
             }
             delList(list);
             show();
+            picking = false;
         });
         
         connect(overlay, &Overlay::color,[=](QColor col){
-            //circle->setColor(col);
             inputCircle->setInitialColor(col);
         });
     }
 }
+
+void ColorView::leaveEvent(QEvent *) {
+    if(!picking)    this->hide();
+}
+
 
 
 

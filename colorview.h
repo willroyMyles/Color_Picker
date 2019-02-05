@@ -139,7 +139,7 @@ public:
 
 private:
     const qreal factor = 2.55;
-    
+    bool picking = false;
     QSlider *rSlider;
     QSlider *gSlider;
     QSlider *bSlider;
@@ -185,6 +185,9 @@ private:
 signals:
 
 public slots:
+    
+protected:
+    void leaveEvent(QEvent *) override;
 };
 
 
