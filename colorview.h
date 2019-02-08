@@ -7,6 +7,7 @@
 #include <QLineEdit>
 #include <QLabel>
 #include <QPushButton>
+#include <QButtonGroup>
 #include <QScreen>
 #include <QSlider>
 #include <QSpinBox>
@@ -40,6 +41,7 @@ class ColorDisplay : public QWidget
 public:
     ColorDisplay(QWidget *parent = Q_NULLPTR);
     QColor color;
+    QColor initialColor = QColor();
 protected:
     void paintEvent(QPaintEvent *) override;
 signals:
@@ -90,7 +92,7 @@ signals:
     void positionChanged(QColor color); //emitted when color circle pressed
     void colorChanged(QColor color); //emitted when sliders change value
     void updateColorText(QColor color); // to update name text
-    
+    void selectingColor(bool val);
 protected:
     void mouseMoveEvent(QMouseEvent *) override;
     void mousePressEvent(QMouseEvent *) override;
@@ -134,10 +136,11 @@ class ColorView : public QWidget
 {
     Q_OBJECT
 public:
-    ColorView(QWidget *parent = nullptr);
+    ColorView(QColor color= QColor(), QWidget *parent = nullptr);
 
 
 private:
+    QColor initialColor;
     const qreal factor = 2.55;
     bool picking = false;
     QSlider *rSlider;
@@ -162,7 +165,12 @@ private:
     QComboBox *comboBox;
     QList<Overlay*> *list;
     QPushButton *confirm;
-    QPushButton *cancel;
+    QPushButton *reset;
+    
+    QPushButton *rgb;
+    QPushButton *hsv;
+    QPushButton *hex;
+    QButtonGroup grp;
 
     ColorDisplay *display;
     ColorCircle *circle;

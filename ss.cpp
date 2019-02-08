@@ -70,9 +70,24 @@ QString SS::QComboBox() {
     return {
         "QComboBox{background: rgba(0,0,0,0); border :0px; border-bottom: 1px solid black; padding: 5px; margin-left : 5px; color : rgba(255,255,255,.9);} "
         "QComboBox:drop-down {   border :0px solid black;}"
-        "QComboBox QAbstractItemView { background-color: rgba(33,33,33,1);  border :0px; border-bottom: 1px solid black; padding-left: 1px; margin-left : 0px; outline: 0px; selection-background-color: rgba(40,128, 185,0); }"
-        "QComboBox QAbstractItemView::item:hover { background-color: accent; border :0px solid rgba(0,0,0,0);}"
+        "QComboBox QAbstractItemView { background-color: rgba(33,33,33,1);  border :0px; border-bottom: 1px solid black;padding: 5px; padding-left: 1px; margin-left : 0px; outline: 0px; selection-background-color: rgba(40,128, 185,0); }"
+        "QComboBox QAbstractItemView::item:hover { background-color: red; border :0px solid rgba(0,0,0,0);}"
     };
+}
+
+QString SS::QPushButtonRounded(int size) {
+    return {
+        "QPushButton{border : 0px; radius : "+QString::number(size/2)+" }"
+    };
+}
+
+QString SS::QPushButtonGrouped() {
+    return QString(
+    "QPushButton{ background:rgba(0,0,0,0); color: rgba(190,190,190,1); border : 1px solid rgba(0,0,0,.5); padding: 5px 16px;} "
+    "QPushButton:checked{ color : rgba(50,150,250,1);}"
+                   "QPushButton:hover{background: rgba(50,50,50,1);}"
+                                                                                                 
+                                                                                                 );
 }
 
 

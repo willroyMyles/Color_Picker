@@ -9,11 +9,12 @@
 #include <QGraphicsEffect>
 #include <QMouseEvent>
 
-ColorView::ColorView(QWidget *parent) : QWidget(parent)
+ColorView::ColorView(QColor color, QWidget *parent ) : QWidget(parent)
 {
+    this->initialColor = color;
     configureView();
     configureConnections();
-    inputCircle->setInitialColor(QColor(255,255,255));
+    inputCircle->setInitialColor(color);
 }
 
 void ColorView::configureView()
@@ -37,7 +38,7 @@ void ColorView::configureView()
 
 	holderLayout->addWidget(holder);
 	setLayout(holderLayout);
-	holderLayout->setContentsMargins(20, 20, 20, 20);
+	holderLayout->setContentsMargins(30, 30, 30, 30);
 
     auto layout = new QVBoxLayout;
     holder->setLayout(layout);
@@ -105,7 +106,8 @@ void ColorView::configureView()
     auto sLabel = new QLabel("S");
     auto vLabel = new QLabel("V");
     auto aLabel = new QLabel("A");
-    auto format = new QLabel("Format");
+    auto format = new QLabel("Format:");
+    format->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     
     rLabel->setStyleSheet(SS::QLabelWhite());
     gLabel->setStyleSheet(SS::QLabelWhite());
@@ -123,20 +125,47 @@ void ColorView::configureView()
     stringList << "RGB" << "HSV" << "HEX" ;
     comboBox->addItems(stringList);
     
+    rgb = new QPushButton("RGB", this);
+    hsv = new QPushButton("HSV", this);
+    hex = new QPushButton("HEX", this);
+    rgb->setCheckable(true);
+    hsv->setCheckable(true);
+    hex->setCheckable(true);
+    grp.addButton(rgb);
+    grp.addButton(hsv);
+    grp.addButton(hex);
+    grp.setExclusive(true);
+    rgb->setChecked(true);
+    
+    rgb->setStyleSheet(SS::QPushButtonGrouped());
+    hsv->setStyleSheet(SS::QPushButtonGrouped());
+    hex->setStyleSheet(SS::QPushButtonGrouped());
+
+    auto buttonWidget = new QWidget;
+    auto buttonWidgetLayout = new QHBoxLayout;
+    buttonWidget->setLayout(buttonWidgetLayout);
+    buttonWidgetLayout->addWidget(format);
+    buttonWidgetLayout->addStretch();
+    buttonWidgetLayout->addWidget(rgb);
+    buttonWidgetLayout->addWidget(hsv);
+    buttonWidgetLayout->addWidget(hex);
+    buttonWidgetLayout->setSpacing(0);
+    buttonWidgetLayout->setContentsMargins(0, 10, 0, 10);
+
     lineEditor->setStyleSheet(SS::QLineEdit());
     comboBox->setStyleSheet(SS::QComboBox());
 
     confirm = new QPushButton("confirm", this);
-    cancel = new QPushButton("cancel", this);
+    reset = new QPushButton("reset", this);
     confirm->setStyleSheet(SS::QPushButtonGreyscale());
-    cancel->setStyleSheet(SS::QPushButtonGreyscale());
+    reset->setStyleSheet(SS::QPushButtonGreyscale());
 
     display = new ColorDisplay;
     circle = new ColorCircle();
     inputCircle = new InputCircle(circle);
     inputCircle->setStyleSheet("QWidget{background: rgba(20,20,20,1);}");
     inputCircle->move(inputCircle->offset,inputCircle->offset);
-
+    display->initialColor = this->initialColor;
     layout->addWidget(hWidget, 0, 0);
     layout->addWidget(hFormat, 1, 0);
     layout->addWidget(stackWidget, 2,0);
@@ -154,9 +183,8 @@ void ColorView::configureView()
     hlayoutWidget->addWidget(circle, 0, 0);
     hlayoutWidget->addWidget(display, 1, 0);
 
-    hlayoutFormat->addWidget(format, 0, 0);
+    hlayoutFormat->addWidget(buttonWidget, 0, 0);
     hlayoutFormat->addWidget(lineEditor, 1, 0);
-    hlayoutFormat->addWidget(comboBox,1,1);
 
     hlayoutSliders->addWidget(rLabel, 0, 0);
     hlayoutSliders->addWidget(gLabel, 1, 0);
@@ -188,9 +216,8 @@ void ColorView::configureView()
 
 
     hlayoutButton->addWidget(confirm, 0, 0);
-    hlayoutButton->addWidget(cancel, 0, 1 );
-
-
+    hlayoutButton->addWidget(reset, 0, 1 );
+    hlayoutButton->setContentsMargins(10, 20, 5, 10);
 
 }
 
@@ -298,6 +325,10 @@ void ColorView::configureConnections()
         this->lineEditor->setText(colorNameFromSpac(col));
     });
     
+    connect(inputCircle, &InputCircle::selectingColor,[=](bool val){
+        picking = val;
+    });
+    
     connect(comboBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [=](int index){
         if(index == 0) {
             spec = QColor::Rgb;
@@ -312,13 +343,34 @@ void ColorView::configureConnections()
             stackWidget->setCurrentIndex(0); // default to rgb
         }
         this->lineEditor->setText(colorNameFromSpac(inputCircle->color));
+        picking = false;
+    });
+    
+    connect(comboBox,static_cast<void (QComboBox::*)(int)>( &QComboBox::highlighted),[=](int index){
+        picking = true;
     });
     
     connect(confirm, &QPushButton::clicked, [=](){
         hide();
     });
-    connect(cancel, &QPushButton::clicked, [=](){
+    connect(reset, &QPushButton::clicked, [=](){
         hide();
+    });
+    
+    connect(rgb, &QPushButton::clicked, [=](){
+        stackWidget->setCurrentIndex(0);
+        spec = QColor::Rgb;
+        this->lineEditor->setText(colorNameFromSpac(inputCircle->color));
+    });
+    connect(hsv, &QPushButton::clicked, [=](){
+        stackWidget->setCurrentIndex(1);
+        spec = QColor::Hsv;
+        this->lineEditor->setText(colorNameFromSpac(inputCircle->color));
+    });
+    connect(hex, &QPushButton::clicked, [=](){
+        stackWidget->setCurrentIndex(0);
+        spec = QColor::Cmyk; // subs for hex
+        this->lineEditor->setText(colorNameFromSpac(inputCircle->color));
     });
 }
 
@@ -509,10 +561,8 @@ InputCircle::InputCircle(ColorCircle *parent) : QWidget(parent) {
     radius = parent->radius;
     centerPoint = parent->centerPoint;
     offset = parent->offset;
-  //  padding = parent->padding;
     color = parent->color;
     if(parent) this->parent = parent;
-  //  move(offset, offset);
 
     setMinimumSize({squareSize,squareSize});
 }
@@ -520,6 +570,7 @@ InputCircle::InputCircle(ColorCircle *parent) : QWidget(parent) {
 void InputCircle::mousePressEvent(QMouseEvent *event) {
     drawSmallDot = false;
     setCirclePosition(event);
+    emit selectingColor(true);
     QWidget::mousePressEvent(event);
     repaint();
 }
@@ -607,6 +658,7 @@ void InputCircle::setAlpha(int alpha) {
 
 void InputCircle::mouseReleaseEvent(QMouseEvent *) {
     drawSmallDot = true;
+    emit selectingColor(false);
     this->repaint();
 }
 
@@ -647,44 +699,35 @@ void InputCircle::checkColorValue() {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ColorDisplay::ColorDisplay(QWidget *parent) : QWidget(parent) {
-    setMinimumHeight(50);
+    int heightForDisplay = 50;
+    setMinimumHeight(heightForDisplay);
     auto layout = new QHBoxLayout;
     setLayout(layout);
     
     auto button = new QPushButton(this);
     button->setIcon(QIcon((":/images/dropper.png")));
     button->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
-    button->setIconSize({25,25});
+    button->setIconSize({heightForDisplay/2,heightForDisplay/2});
     
     layout->addStretch();
     layout->addWidget(button);
-    //layout->setContentsMargins(0, 0, 0, 0);
+    layout->addSpacing(16);
+    layout->setContentsMargins(0, 0, 0, 0);
     
     connect(button, &QPushButton::clicked,[=](){
         emit pick();
     });
-    
+   
     button->setStyleSheet(SS::QPushButtonInvisible());
 }
 
 void ColorDisplay::paintEvent(QPaintEvent *) {
     QPainter painter(this);
-    painter.fillRect(QRect(0,0,width(),height()), color);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setBrush(color);
+    //draw entire display
+    painter.drawRoundedRect(QRect(0,0,width(),height()), 25, 25);
 }
 
 
