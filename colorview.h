@@ -13,8 +13,18 @@
 #include <QSpinBox>
 #include <QStackedWidget>
 #include <QWidget>
+#include <QLinearGradient>
 #include <qwindowdefs_win.h>
 #include "ss.h"
+
+class ValueSlider : public QSlider
+{
+public:
+    ValueSlider(QWidget *parent = Q_NULLPTR);
+    void setColor(QColor col);
+private:
+    QColor col;
+};
 
 class Overlay : public QWidget
 {
@@ -57,10 +67,13 @@ public:
     QColor color;
     
     void setInitialColor(QColor col);
+    void setColor(QColor color);
+    QColor getInitialColor();
+    QPoint getGlobalPositionFromIndicatorCircle();
 
 private:
     bool drawSmallDot = false;
-    
+    bool pressed = false;
     int squareSize;
     int radius;
 //    int padding;
@@ -70,6 +83,7 @@ private:
     
     QPoint centerPoint;
     QPoint pos;
+    QPoint globalPos;
     
     QColor initialColor;
     int colorValue = 255;
@@ -77,7 +91,7 @@ private:
     void setCirclePosition(QMouseEvent *);
     QColor getCurrentColorFromPosition();
     void drawIndicatorCircle(QColor color);
-    void checkColorValue();
+    bool checkColorValue(bool val = true);
     
 public slots:
     void setRed(int red);
@@ -93,6 +107,7 @@ signals:
     void colorChanged(QColor color); //emitted when sliders change value
     void updateColorText(QColor color); // to update name text
     void selectingColor(bool val);
+    void updateValue(int value);
 protected:
     void mouseMoveEvent(QMouseEvent *) override;
     void mousePressEvent(QMouseEvent *) override;
@@ -150,7 +165,7 @@ private:
     QSlider *hSlider;
     QSlider *sSlider;
     QSlider *vSlider;
-    
+    ValueSlider *valueSlider;
     QStackedWidget *stackWidget;
 
     QSpinBox *rBox;
@@ -166,7 +181,8 @@ private:
     QList<Overlay*> *list;
     QPushButton *confirm;
     QPushButton *reset;
-    
+    QPushButton *cancel;
+
     QPushButton *rgb;
     QPushButton *hsv;
     QPushButton *hex;
@@ -187,15 +203,21 @@ private:
     void sliderUpdatesSpinboxWithoutSignal(QSpinBox *, int value);
     void spinboxUpdatesSliderWithoutSignal(QSlider *, int value);
     void colorCircleUpdatesSliderWithoutNotification(QSlider *, QSpinBox *, QColor &);
+    void setColorFromHex();
     
     void createOverlay();
 
+    bool isPressed = false;
+    QPoint oldPos;
 signals:
 
 public slots:
     
 protected:
     void leaveEvent(QEvent *) override;
+    void mousePressEvent(QMouseEvent *) override;
+    void mouseMoveEvent(QMouseEvent *) override;
+    void mouseReleaseEvent(QMouseEvent *) override;
 };
 
 

@@ -74,6 +74,7 @@ void ColorView::configureView()
     sSlider = new QSlider(Qt::Horizontal, this);
     vSlider = new QSlider(Qt::Horizontal, this);
     aSlider = new QSlider(Qt::Horizontal, this);
+    valueSlider = new ValueSlider;
     
     rSlider->setStyleSheet(SS::QSlider());
     gSlider->setStyleSheet(SS::QSlider());
@@ -119,11 +120,7 @@ void ColorView::configureView()
     format->setStyleSheet(SS::QLabelWhite());
 
     lineEditor = new QLineEdit(this);
-    comboBox = new QComboBox(this);
-
-    QStringList stringList;
-    stringList << "RGB" << "HSV" << "HEX" ;
-    comboBox->addItems(stringList);
+    lineEditor->setEnabled(false);
     
     rgb = new QPushButton("RGB", this);
     hsv = new QPushButton("HSV", this);
@@ -153,12 +150,12 @@ void ColorView::configureView()
     buttonWidgetLayout->setContentsMargins(0, 10, 0, 10);
 
     lineEditor->setStyleSheet(SS::QLineEdit());
-    comboBox->setStyleSheet(SS::QComboBox());
-
     confirm = new QPushButton("confirm", this);
     reset = new QPushButton("reset", this);
+    cancel = new QPushButton("cancel", this);
     confirm->setStyleSheet(SS::QPushButtonGreyscale());
     reset->setStyleSheet(SS::QPushButtonGreyscale());
+    cancel->setStyleSheet(SS::QPushButtonGreyscale());
 
     display = new ColorDisplay;
     circle = new ColorCircle();
@@ -181,10 +178,12 @@ void ColorView::configureView()
     aLayout->setContentsMargins(12, 0, 12, 0);
     
     hlayoutWidget->addWidget(circle, 0, 0);
-    hlayoutWidget->addWidget(display, 1, 0);
+    hlayoutWidget->addWidget(valueSlider, 1, 0);
+    hlayoutWidget->addWidget(display, 2, 0);
 
     hlayoutFormat->addWidget(buttonWidget, 0, 0);
     hlayoutFormat->addWidget(lineEditor, 1, 0);
+    hlayoutFormat->setContentsMargins(10, 10, 5, 10);
 
     hlayoutSliders->addWidget(rLabel, 0, 0);
     hlayoutSliders->addWidget(gLabel, 1, 0);
@@ -214,11 +213,11 @@ void ColorView::configureView()
     stackWidget->addWidget(hsvSliders);
     stackWidget->setContentsMargins(0,0,0,0);
 
-
+    hlayoutButton->setSpacing(3);
     hlayoutButton->addWidget(confirm, 0, 0);
     hlayoutButton->addWidget(reset, 0, 1 );
-    hlayoutButton->setContentsMargins(10, 20, 5, 10);
-
+    hlayoutButton->addWidget(cancel, 0, 2 );
+    hlayoutButton->setContentsMargins(10, 20, 5, 0);
 }
 
 void ColorView::configureStylesheet() {
@@ -249,6 +248,7 @@ void ColorView::configureConnections()
     hSlider->setRange(hBox->minimum(),hBox->maximum());
     sSlider->setRange(sBox->minimum(),sBox->maximum());
     vSlider->setRange(vBox->minimum(),vBox->maximum());
+    valueSlider->setRange(vBox->minimum(),vBox->maximum());
     aSlider->setRange(aBox->minimum(),aBox->maximum());
     aSlider->setValue(255);
     
@@ -279,6 +279,17 @@ void ColorView::configureConnections()
     connect(vSlider, &QSlider::valueChanged,[=](int value){
         sliderUpdatesSpinboxWithoutSignal(vBox, value);
         inputCircle->setValue(value*factor);
+        valueSlider->blockSignals(true);
+        valueSlider->setValue(value);
+        valueSlider->blockSignals(false);
+    });
+    connect(valueSlider, &QSlider::valueChanged,[=](int value){
+        sliderUpdatesSpinboxWithoutSignal(vBox, value);
+        inputCircle->setValue(value*factor);
+        vSlider->blockSignals(true);
+        vSlider->setValue(value);
+        vSlider->blockSignals(false);
+        qDebug() << "called";
     });
     connect(aSlider, &QSlider::valueChanged,[=](int value){
         sliderUpdatesSpinboxWithoutSignal(aBox, value);
@@ -303,6 +314,7 @@ void ColorView::configureConnections()
     });
     connect(vBox, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),[=](int value){
         spinboxUpdatesSliderWithoutSignal(vSlider, value);
+        spinboxUpdatesSliderWithoutSignal(valueSlider, value);
     });
     connect(aBox, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),[=](int value){
         spinboxUpdatesSliderWithoutSignal(aSlider, value);
@@ -315,6 +327,7 @@ void ColorView::configureConnections()
         this->colorCircleUpdatesSliderWithoutNotification(hSlider, hBox, col);
         this->colorCircleUpdatesSliderWithoutNotification(sSlider, sBox, col);
         this->colorCircleUpdatesSliderWithoutNotification(vSlider, vBox, col);
+        this->colorCircleUpdatesSliderWithoutNotification(valueSlider, vBox, col);
         this->colorCircleUpdatesSliderWithoutNotification(aSlider, aBox, col);
     });
 
@@ -323,37 +336,35 @@ void ColorView::configureConnections()
         display->setToolTip(col.name());
         display->repaint();
         this->lineEditor->setText(colorNameFromSpac(col));
+        valueSlider->setColor(col);
     });
     
     connect(inputCircle, &InputCircle::selectingColor,[=](bool val){
         picking = val;
     });
     
-    connect(comboBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), [=](int index){
-        if(index == 0) {
-            spec = QColor::Rgb;
-            stackWidget->setCurrentIndex(index);
-        }
-        if(index == 1){
-             spec = QColor::Hsv;
-            stackWidget->setCurrentIndex(index);
-        }
-        if(index == 2){
-             spec = QColor::Cmyk; // subs for hex
-            stackWidget->setCurrentIndex(0); // default to rgb
-        }
-        this->lineEditor->setText(colorNameFromSpac(inputCircle->color));
-        picking = false;
-    });
-    
-    connect(comboBox,static_cast<void (QComboBox::*)(int)>( &QComboBox::highlighted),[=](int index){
-        picking = true;
+    connect(inputCircle, &InputCircle::updateValue,[=](int value){
+        valueSlider->blockSignals(true);
+        vSlider->blockSignals(true);
+        vBox->blockSignals(true);
+        
+        valueSlider->setValue(value/factor);
+        vSlider->setValue(value/factor);
+        vBox->setValue(value/factor);
+
+        valueSlider->blockSignals(false);
+        vSlider->blockSignals(false);
+        vBox->blockSignals(false);
+
     });
     
     connect(confirm, &QPushButton::clicked, [=](){
         hide();
     });
     connect(reset, &QPushButton::clicked, [=](){
+        inputCircle->setColor(inputCircle->getInitialColor());
+    });
+    connect(cancel, &QPushButton::clicked, [=](){
         hide();
     });
     
@@ -361,16 +372,28 @@ void ColorView::configureConnections()
         stackWidget->setCurrentIndex(0);
         spec = QColor::Rgb;
         this->lineEditor->setText(colorNameFromSpac(inputCircle->color));
+        lineEditor->setEnabled(false);
     });
     connect(hsv, &QPushButton::clicked, [=](){
         stackWidget->setCurrentIndex(1);
         spec = QColor::Hsv;
         this->lineEditor->setText(colorNameFromSpac(inputCircle->color));
+        lineEditor->setEnabled(false);
+
     });
     connect(hex, &QPushButton::clicked, [=](){
         stackWidget->setCurrentIndex(0);
         spec = QColor::Cmyk; // subs for hex
         this->lineEditor->setText(colorNameFromSpac(inputCircle->color));
+        lineEditor->setEnabled(true);
+
+    });
+    
+    connect(lineEditor, &QLineEdit::textChanged, [=]() {
+        setColorFromHex();
+    });
+    connect(lineEditor, &QLineEdit::returnPressed, [=]() {
+        setColorFromHex();
     });
 }
 
@@ -382,8 +405,9 @@ void ColorView::spinboxUpdatesSliderWithoutSignal(QSlider *slider, int value) {
     if(slider == bSlider)     inputCircle->setBlue(value);
     if(slider == hSlider)     inputCircle->setHue(value);
     if(slider == sSlider)     inputCircle->setSaturation(value*factor);
-    if(slider == vSlider)     inputCircle->setValue(value*factor);
     if(slider == aSlider)     inputCircle->setAlpha(value);
+    if(slider == vSlider)     inputCircle->setValue(value*factor);
+    if(slider == valueSlider) inputCircle->setValue(value*factor);
     slider->blockSignals(false);
 }
 
@@ -397,6 +421,7 @@ void ColorView::colorCircleUpdatesSliderWithoutNotification(QSlider *slider, QSp
     if(slider == hSlider)   slider->setValue(color.hue());
     if(slider == sSlider)   slider->setValue(color.saturation()/factor);
     if(slider == vSlider)   slider->setValue(color.value()/factor);
+    if(slider == valueSlider)   slider->setValue(color.value()/factor);
     if(slider == aSlider)   slider->setValue(color.alpha());
     if(box == rBox)         box->setValue(color.red());
     if(box == gBox)         box->setValue(color.green());
@@ -439,8 +464,6 @@ void ColorView::sliderUpdatesSpinboxWithoutSignal(QSpinBox *box, int value) {
 }
 
 void ColorView::createOverlay() {
-    
-    //hide();
     picking = true;
     int num = QApplication::desktop()->screenCount();
     list = new QList<Overlay*>;
@@ -461,18 +484,46 @@ void ColorView::createOverlay() {
             }
             delList(list);
             show();
+            QCursor::setPos(inputCircle->getGlobalPositionFromIndicatorCircle());
             picking = false;
         });
         
         connect(overlay, &Overlay::color,[=](QColor col){
-            inputCircle->setInitialColor(col);
+            inputCircle->setColor(col);
         });
     }
 }
 
 void ColorView::leaveEvent(QEvent *) {
-    if(!picking)    this->hide();
+   // if(!picking)    this->hide();
 }
+
+void ColorView::mousePressEvent(QMouseEvent *e) {
+    isPressed = true;
+    oldPos = e->globalPos();
+}
+
+void ColorView::mouseMoveEvent(QMouseEvent *e) {
+    QPoint delta = e->globalPos() - oldPos;
+    if (isPressed) move(x() + delta.x(), y() + delta.y());
+    oldPos = e->globalPos();
+}
+
+void ColorView::mouseReleaseEvent(QMouseEvent *) {
+    isPressed = false;
+}
+
+void ColorView::setColorFromHex() {
+    QColor col;
+    QString name = lineEditor->text();
+    if(name.length() < 5) return;
+    if(QColor::isValidColor(name)) col.setNamedColor(name);
+    if(col.isValid())inputCircle->setColor(col);
+}
+
+
+
+
 
 
 
@@ -499,10 +550,8 @@ ColorCircle::ColorCircle(QWidget *parent) : QWidget(parent)
 
 QImage *ColorCircle::drawImage()
 {
-
-
-   // if(!image)
-        image = new QImage(250, 250, QImage::Format_ARGB32_Premultiplied);
+    if(!image)
+        image = new QImage(squareSize, squareSize, QImage::Format_ARGB32_Premultiplied);
 
     //draw color circle image
         for (int i = 0; i < image->width(); i++) {
@@ -569,15 +618,20 @@ InputCircle::InputCircle(ColorCircle *parent) : QWidget(parent) {
 
 void InputCircle::mousePressEvent(QMouseEvent *event) {
     drawSmallDot = false;
+    
+    QVector2D mousePos(event->pos().x(), event->pos().y());
+    auto centerPos = QVector2D(centerPoint.x(), centerPoint.y());
+    auto diff = mousePos - centerPos;
+    if (diff.length() > radius)  return;
+    
+    pressed = true;
     setCirclePosition(event);
     emit selectingColor(true);
-    QWidget::mousePressEvent(event);
     repaint();
 }
 
 void InputCircle::mouseMoveEvent(QMouseEvent *event) {
-    setCirclePosition(event);
-    QWidget::mouseMoveEvent(event);
+    if(pressed) setCirclePosition(event);
 }
 
 void InputCircle::setCirclePosition(QMouseEvent *event) {
@@ -588,10 +642,11 @@ void InputCircle::setCirclePosition(QMouseEvent *event) {
     auto position = centerPos + diff;
     pos.setX(position.x());
     pos.setY(position.y());
-    qDebug() << pos;
+
     color = getCurrentColorFromPosition();
     emit positionChanged(color);
     emit updateColorText(color);
+//    emit updateValue(color.value());
 }
 
 QColor InputCircle::getCurrentColorFromPosition() {
@@ -599,9 +654,9 @@ QColor InputCircle::getCurrentColorFromPosition() {
     auto saturation = (qSqrt(d) / radius)*255.0f;
     qreal theta = qAtan2(pos.ry() - centerPoint.ry(), pos.rx() - centerPoint.rx());
     theta = (180 + 90 + (int)qRadiansToDegrees(theta)) % 360;
-    if (saturation >= 255)    saturation = 255;
+    if (saturation >= 253)    saturation = 255;
     if (saturation <= 2)    saturation = 0;
-    if (colorValue >= 255)    colorValue = 255;
+    if (colorValue >= 253)    colorValue = 255;
     if (colorValue <= 2)    colorValue = 0;
     
     color.setHsv(theta, saturation, colorValue, this->alpha);
@@ -625,6 +680,7 @@ void InputCircle::drawIndicatorCircle(QColor color) {
     qreal x = sat * qCos(theta) + centerPoint.x();
     qreal y = sat * qSin(theta) + centerPoint.y();
     pos = QPoint(x, y);
+    globalPos = mapToGlobal(pos);
     emit colorChanged(color);
     emit updateColorText(color);
     repaint();
@@ -658,6 +714,7 @@ void InputCircle::setAlpha(int alpha) {
 
 void InputCircle::mouseReleaseEvent(QMouseEvent *) {
     drawSmallDot = true;
+    pressed = false;
     emit selectingColor(false);
     this->repaint();
 }
@@ -669,30 +726,56 @@ void InputCircle::setHue(int hue) {
 }
 
 void InputCircle::setSaturation(int saturation) {
+    if(saturation > 253.9) saturation = 255;
     color.setHsv(color.hue(), saturation, color.value(), alpha);
     checkColorValue();
     drawIndicatorCircle(color);
 }
 
 void InputCircle::setValue(int value) {
+    if(value > 253.9) value = 255;
     color.setHsv(color.hue(), color.saturation(), value, alpha);
-    checkColorValue();
+    checkColorValue(false);
     drawIndicatorCircle(color);
 }
 
 void InputCircle::setInitialColor(QColor col) {
     this->color = col;
+    this->initialColor = col;
     drawIndicatorCircle(col);
+    checkColorValue();
     emit positionChanged(col);
 }
 
-void InputCircle::checkColorValue() {
+bool InputCircle::checkColorValue(bool val) {
     if(colorValue != color.value()){
         colorValue = color.value();
         parent->colorValue = color.value();
         parent->drawImage();
+        if(val) emit updateValue(color.value());
+        return true;
     }
+    return false;
 }
+
+void InputCircle::setColor(QColor color) {
+    this->color = color;
+    drawIndicatorCircle(color);
+    checkColorValue();
+    parent->repaint();
+    emit positionChanged(color);
+}
+
+QColor InputCircle::getInitialColor() {
+    return initialColor;
+}
+
+QPoint InputCircle::getGlobalPositionFromIndicatorCircle() {
+    return globalPos;
+}
+
+
+
 
 
 
@@ -770,11 +853,41 @@ void Overlay::mouseReleaseEvent(QMouseEvent *) {
 
 bool Overlay::eventFilter(QObject *watched, QEvent *event)
 {
+    if(watched == this)
+    {
+        switch(event->type())
+        {
+            case QEvent::FocusOut:
+                emit closeWindow();
+                break;
+        }
+    }
+    
     return QWidget::eventFilter(watched, event);
 }
 
 void Overlay::paintEvent(QPaintEvent *e) {
 
+}
+
+
+
+
+
+ValueSlider::ValueSlider(QWidget *parent) : QSlider(parent) {
+    setOrientation(Qt::Horizontal);
+    setStyleSheet(
+                  QString(
+    "QSlider::groove:horizontal {background: qlineargradient(x1: 1, y1: 0, x2: 0, y2: 0,stop: 0 white, stop: 1 black); border-radius: 1px; border: 1px solid rgba(0,0,0,1); }"
+    " QSlider::handle:horizontal {height: 3px; width:14px; margin: -2px 0px; background: rgba(50,148,213,1); }"
+    " QSlider::add-page:horizontal, QSlider::sub-page:horizontal {background: rgba(0,0,0,0); border-radius: 1px;}"
+
+    ));
+    
+}
+
+void ValueSlider::setColor(QColor col) {
+    this->col = col;
 }
 
 
