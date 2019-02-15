@@ -31,8 +31,10 @@ class Overlay : public QWidget
     Q_OBJECT
 public:
     //accepts screen rect and widget as parent
-    Overlay(QRect sg, QWidget* parent = Q_NULLPTR);
+    Overlay(QRect sg,int screenNumber, QWidget* parent = Q_NULLPTR);
 private:
+	QPixmap pixmap;
+	int screenNum;
 signals:
     void color(QColor col);
     void closeWindow();
@@ -41,7 +43,6 @@ protected:
     void mouseMoveEvent(QMouseEvent *) override;
     void mousePressEvent(QMouseEvent *) override;
     void mouseReleaseEvent(QMouseEvent *) override;
-    bool eventFilter(QObject*, QEvent*) override;
 };
 
 class ColorCircle;
@@ -136,7 +137,7 @@ public slots:
     void setAlpha(int alpha);
     void setColor(QColor col);
 private:
-    QImage *image;
+    QImage *image = Q_NULLPTR;
     qreal saturation;
     qreal alpha = 255.0;
 
@@ -165,7 +166,6 @@ private:
     QSlider *hSlider;
     QSlider *sSlider;
     QSlider *vSlider;
-    ValueSlider *valueSlider;
     QStackedWidget *stackWidget;
 
     QSpinBox *rBox;

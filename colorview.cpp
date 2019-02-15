@@ -8,6 +8,7 @@
 #include <QPainter>
 #include <QGraphicsEffect>
 #include <QMouseEvent>
+#include <QWindow>
 
 ColorView::ColorView(QColor color, QWidget *parent ) : QWidget(parent)
 {
@@ -74,7 +75,6 @@ void ColorView::configureView()
     sSlider = new QSlider(Qt::Horizontal, this);
     vSlider = new QSlider(Qt::Horizontal, this);
     aSlider = new QSlider(Qt::Horizontal, this);
-    valueSlider = new ValueSlider;
     
     rSlider->setStyleSheet(SS::QSlider());
     gSlider->setStyleSheet(SS::QSlider());
@@ -178,7 +178,6 @@ void ColorView::configureView()
     aLayout->setContentsMargins(12, 0, 12, 0);
     
     hlayoutWidget->addWidget(circle, 0, 0);
-    hlayoutWidget->addWidget(valueSlider, 1, 0);
     hlayoutWidget->addWidget(display, 2, 0);
 
     hlayoutFormat->addWidget(buttonWidget, 0, 0);
@@ -248,7 +247,6 @@ void ColorView::configureConnections()
     hSlider->setRange(hBox->minimum(),hBox->maximum());
     sSlider->setRange(sBox->minimum(),sBox->maximum());
     vSlider->setRange(vBox->minimum(),vBox->maximum());
-    valueSlider->setRange(vBox->minimum(),vBox->maximum());
     aSlider->setRange(aBox->minimum(),aBox->maximum());
     aSlider->setValue(255);
     
@@ -279,18 +277,8 @@ void ColorView::configureConnections()
     connect(vSlider, &QSlider::valueChanged,[=](int value){
         sliderUpdatesSpinboxWithoutSignal(vBox, value);
         inputCircle->setValue(value*factor);
-        valueSlider->blockSignals(true);
-        valueSlider->setValue(value);
-        valueSlider->blockSignals(false);
     });
-    connect(valueSlider, &QSlider::valueChanged,[=](int value){
-        sliderUpdatesSpinboxWithoutSignal(vBox, value);
-        inputCircle->setValue(value*factor);
-        vSlider->blockSignals(true);
-        vSlider->setValue(value);
-        vSlider->blockSignals(false);
-        qDebug() << "called";
-    });
+   
     connect(aSlider, &QSlider::valueChanged,[=](int value){
         sliderUpdatesSpinboxWithoutSignal(aBox, value);
         inputCircle->setAlpha(value);
@@ -314,7 +302,6 @@ void ColorView::configureConnections()
     });
     connect(vBox, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),[=](int value){
         spinboxUpdatesSliderWithoutSignal(vSlider, value);
-        spinboxUpdatesSliderWithoutSignal(valueSlider, value);
     });
     connect(aBox, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),[=](int value){
         spinboxUpdatesSliderWithoutSignal(aSlider, value);
@@ -327,7 +314,6 @@ void ColorView::configureConnections()
         this->colorCircleUpdatesSliderWithoutNotification(hSlider, hBox, col);
         this->colorCircleUpdatesSliderWithoutNotification(sSlider, sBox, col);
         this->colorCircleUpdatesSliderWithoutNotification(vSlider, vBox, col);
-        this->colorCircleUpdatesSliderWithoutNotification(valueSlider, vBox, col);
         this->colorCircleUpdatesSliderWithoutNotification(aSlider, aBox, col);
     });
 
@@ -336,7 +322,6 @@ void ColorView::configureConnections()
         display->setToolTip(col.name());
         display->repaint();
         this->lineEditor->setText(colorNameFromSpac(col));
-        valueSlider->setColor(col);
     });
     
     connect(inputCircle, &InputCircle::selectingColor,[=](bool val){
@@ -344,15 +329,12 @@ void ColorView::configureConnections()
     });
     
     connect(inputCircle, &InputCircle::updateValue,[=](int value){
-        valueSlider->blockSignals(true);
         vSlider->blockSignals(true);
         vBox->blockSignals(true);
         
-        valueSlider->setValue(value/factor);
         vSlider->setValue(value/factor);
         vBox->setValue(value/factor);
 
-        valueSlider->blockSignals(false);
         vSlider->blockSignals(false);
         vBox->blockSignals(false);
 
@@ -407,7 +389,6 @@ void ColorView::spinboxUpdatesSliderWithoutSignal(QSlider *slider, int value) {
     if(slider == sSlider)     inputCircle->setSaturation(value*factor);
     if(slider == aSlider)     inputCircle->setAlpha(value);
     if(slider == vSlider)     inputCircle->setValue(value*factor);
-    if(slider == valueSlider) inputCircle->setValue(value*factor);
     slider->blockSignals(false);
 }
 
@@ -421,7 +402,6 @@ void ColorView::colorCircleUpdatesSliderWithoutNotification(QSlider *slider, QSp
     if(slider == hSlider)   slider->setValue(color.hue());
     if(slider == sSlider)   slider->setValue(color.saturation()/factor);
     if(slider == vSlider)   slider->setValue(color.value()/factor);
-    if(slider == valueSlider)   slider->setValue(color.value()/factor);
     if(slider == aSlider)   slider->setValue(color.alpha());
     if(box == rBox)         box->setValue(color.red());
     if(box == gBox)         box->setValue(color.green());
@@ -467,14 +447,10 @@ void ColorView::createOverlay() {
     picking = true;
     int num = QApplication::desktop()->screenCount();
     list = new QList<Overlay*>;
-    auto delList = [&](QList<Overlay*> *list){
-        delete list;
-        list = nullptr;
-    };
     
     for (int i =0 ; i< num; i++){
         auto geo =  QApplication::desktop()->screenGeometry(i);
-        auto overlay = new Overlay(geo);
+        auto overlay = new Overlay(geo, i);
         list->append(overlay);
         
         connect(overlay, &Overlay::closeWindow,[=](){
@@ -482,7 +458,8 @@ void ColorView::createOverlay() {
                 win->close();
                 win->deleteLater();
             }
-            delList(list);
+			delete list;
+			list = nullptr;
             show();
             QCursor::setPos(inputCircle->getGlobalPositionFromIndicatorCircle());
             picking = false;
@@ -815,20 +792,25 @@ void ColorDisplay::paintEvent(QPaintEvent *) {
 
 
 
-Overlay::Overlay(QRect sg, QWidget *parent): QWidget(parent) {
-    setWindowFlags( windowFlags() | Qt::WindowStaysOnTopHint | Qt::X11BypassWindowManagerHint);
+Overlay::Overlay(QRect sg, int screenNumber, QWidget *parent) : QWidget(parent) {
+    setWindowFlags( windowFlags() | Qt::WindowStaysOnTopHint | Qt::X11BypassWindowManagerHint | Qt::FramelessWindowHint);
 
     setMouseTracking(true);
     setAttribute(Qt::WA_QuitOnClose, false);
-    setAttribute(Qt::WA_TranslucentBackground);
+   // setAttribute(Qt::WA_TranslucentBackground);
 
-    qreal overlayOpacity = 0.1f;
+    qreal overlayOpacity = 0.01f;
     setWindowOpacity(overlayOpacity);
     
     move(sg.x(), sg.y());
     resize(sg.width(), sg.height());
-    installEventFilter(this);
-    show();
+	screenNum = screenNumber;
+	auto screen = QGuiApplication::screens().at(screenNum);
+	auto geom = screen->geometry();
+	pixmap = screen->grabWindow(QApplication::desktop()->winId(), geom.x(), geom.y(), geom.width(), geom.height());
+
+	show();
+	repaint();
 }
 
 void Overlay::mousePressEvent(QMouseEvent *event) {
@@ -838,12 +820,21 @@ void Overlay::mousePressEvent(QMouseEvent *event) {
 
 void Overlay::mouseMoveEvent(QMouseEvent *eve) {
     
-    int mouseScreen = qApp->desktop()->screenNumber(QCursor::pos());
-    auto point = QCursor::pos() - QPoint(10,10);
-    auto p = QGuiApplication::screens().at(mouseScreen)->grabWindow(winId(),point.x(), point.y(),20,20);
-    auto col = p.toImage().pixelColor(10,10);
+    //int mouseScreen = qApp->desktop()->screenNumber(QCursor::pos());
+    //auto point = QCursor::pos() - QPoint(10,10);
+    //auto p = QGuiApplication::screens().at(mouseScreen)->grabWindow(winId(),point.x(), point.y(),20,20);
+    //auto col = p.toImage().pixelColor(10,10);
 
-    emit color(col);
+
+	//pixmap = QGuiApplication::screens().at(screenNum)->grabWindow(QApplication::desktop()->winId());
+	//pixmap = this->grab();
+
+	auto screen = QGuiApplication::screens().at(screenNum);
+	auto geom = screen->geometry();
+	pixmap = screen->grabWindow(QApplication::desktop()->winId(), geom.x(), geom.y(), geom.width(), geom.height());
+
+	auto colo = pixmap.toImage().pixelColor(mapFromGlobal(QCursor::pos()));
+    emit color(colo);
     QWidget::mouseMoveEvent(eve);
 }
 
@@ -851,23 +842,10 @@ void Overlay::mouseReleaseEvent(QMouseEvent *) {
 //    this->close();
 }
 
-bool Overlay::eventFilter(QObject *watched, QEvent *event)
-{
-    if(watched == this)
-    {
-        switch(event->type())
-        {
-            case QEvent::FocusOut:
-                emit closeWindow();
-                break;
-        }
-    }
-    
-    return QWidget::eventFilter(watched, event);
-}
 
 void Overlay::paintEvent(QPaintEvent *e) {
-
+	QPainter painter(this);
+	painter.drawPixmap(0, 0, width(), height(), pixmap);
 }
 
 
